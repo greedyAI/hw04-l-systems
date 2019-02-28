@@ -6,16 +6,22 @@ abstract class Drawable {
   bufIdx: WebGLBuffer;
   bufPos: WebGLBuffer;
   bufNor: WebGLBuffer;
-  bufTranslate: WebGLBuffer;
-  bufCol: WebGLBuffer;
   bufUV: WebGLBuffer;
+
+  bufTranslate: WebGLBuffer;
+  bufRotation: WebGLBuffer;
+  bufScale: WebGLBuffer;
+  bufCol: WebGLBuffer;
 
   idxGenerated: boolean = false;
   posGenerated: boolean = false;
   norGenerated: boolean = false;
-  colGenerated: boolean = false;
-  translateGenerated: boolean = false;
   uvGenerated: boolean = false;
+
+  translateGenerated: boolean = false;
+  rotationGenerated: boolean = false;
+  scaleGenerated: boolean = false;
+  colGenerated: boolean = false;
 
   numInstances: number = 0; // How many instances of this Drawable the shader program should draw
 
@@ -25,9 +31,12 @@ abstract class Drawable {
     gl.deleteBuffer(this.bufIdx);
     gl.deleteBuffer(this.bufPos);
     gl.deleteBuffer(this.bufNor);
-    gl.deleteBuffer(this.bufCol);
-    gl.deleteBuffer(this.bufTranslate);
     gl.deleteBuffer(this.bufUV);
+
+    gl.deleteBuffer(this.bufTranslate);
+    gl.deleteBuffer(this.bufRotation);
+    gl.deleteBuffer(this.bufScale);
+    gl.deleteBuffer(this.bufCol);
   }
 
   generateIdx() {
@@ -53,6 +62,16 @@ abstract class Drawable {
   generateTranslate() {
     this.translateGenerated = true;
     this.bufTranslate = gl.createBuffer();
+  }
+
+  generateRotation() {
+    this.rotationGenerated = true;
+    this.bufRotation = gl.createBuffer();
+  }
+
+  generateScale() {
+    this.scaleGenerated = true;
+    this.bufScale = gl.createBuffer();
   }
 
   generateUV() {
@@ -93,6 +112,20 @@ abstract class Drawable {
       gl.bindBuffer(gl.ARRAY_BUFFER, this.bufTranslate);
     }
     return this.translateGenerated;
+  }
+
+  bindRotation(): boolean {
+    if (this.rotationGenerated) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.bufRotation);
+    }
+    return this.rotationGenerated;
+  }
+
+  bindScale(): boolean {
+    if (this.scaleGenerated) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.bufScale);
+    }
+    return this.scaleGenerated;
   }
 
   bindUV(): boolean {

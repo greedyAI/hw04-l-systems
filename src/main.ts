@@ -1,25 +1,31 @@
-import {vec3} from 'gl-matrix';
+import {vec3, vec4} from 'gl-matrix';
 import * as Stats from 'stats-js';
 import * as DAT from 'dat-gui';
-import Square from './geometry/Square';
-import ScreenQuad from './geometry/ScreenQuad';
 import OpenGLRenderer from './rendering/gl/OpenGLRenderer';
 import Camera from './Camera';
-import {setGL} from './globals';
+import {setGL, readTextFile} from './globals';
 import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
+import Plant from './Plant'
+import Mesh from './geometry/Mesh'
+import Square from './geometry/Square';
+import ScreenQuad from './geometry/ScreenQuad';
 
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
 };
 
+let plant: Plant;
+let iterations = 7;
+
+let branch: Mesh;
+let leaf: Mesh;
+
 let square: Square;
 let screenQuad: ScreenQuad;
 let time: number = 0.0;
 
 function loadScene() {
-  square = new Square();
-  square.create();
   screenQuad = new ScreenQuad();
   screenQuad.create();
 
@@ -28,25 +34,15 @@ function loadScene() {
   // offsets and gradiated colors for a 100x100 grid
   // of squares, even though the VBO data for just
   // one square is actually passed to the GPU
-  let offsetsArray = [];
-  let colorsArray = [];
-  let n: number = 100.0;
-  for(let i = 0; i < n; i++) {
-    for(let j = 0; j < n; j++) {
-      offsetsArray.push(i);
-      offsetsArray.push(j);
-      offsetsArray.push(0);
 
-      colorsArray.push(i / n);
-      colorsArray.push(j / n);
-      colorsArray.push(1.0);
-      colorsArray.push(1.0); // Alpha channel
-    }
-  }
-  let offsets: Float32Array = new Float32Array(offsetsArray);
-  let colors: Float32Array = new Float32Array(colorsArray);
-  square.setInstanceVBOs(offsets, colors);
-  square.setNumInstances(n * n); // grid of "particles"
+  plant = new Plant(vec3.fromValues(0,0,0), iterations, vec4.fromValues(30/255.0, 2/255.0, 2/255.0, 1), vec4.fromValues(245/255.0, 177/255.0, 245/255.0, 1));
+  plant.createPlant();
+
+  let branchString: string = readTextFile('./obj/branch.obj')
+  branch = new Mesh(branchString, vec3.fromValues(0,0,0));
+  branch.create();
+  branch.setInstanceVBOs(new Float32Array(plant.branchTranslate), new Float32Array(plant.branchRotate), new Float32Array(plant.branchScale), new Float32Array(plant.branchColor));
+  branch.setNumInstances(plant.branchCount);
 }
 
 function main() {
@@ -74,12 +70,11 @@ function main() {
   // Initial call to load scene
   loadScene();
 
-  const camera = new Camera(vec3.fromValues(50, 50, 10), vec3.fromValues(50, 50, 0));
+  const camera = new Camera(vec3.fromValues(10, 50, 10), vec3.fromValues(0, 50, 0));
 
   const renderer = new OpenGLRenderer(canvas);
   renderer.setClearColor(0.2, 0.2, 0.2, 1);
-  gl.enable(gl.BLEND);
-  gl.blendFunc(gl.ONE, gl.ONE); // Additive blending
+  gl.enable(gl.DEPTH_TEST);
 
   const instancedShader = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, require('./shaders/instanced-vert.glsl')),
@@ -101,7 +96,7 @@ function main() {
     renderer.clear();
     renderer.render(camera, flat, [screenQuad]);
     renderer.render(camera, instancedShader, [
-      square,
+      branch
     ]);
     stats.end();
 

@@ -1,54 +1,42 @@
-import {vec3, mat4} from 'gl-matrix';
+import {glMatrix, vec3, vec4, quat} from 'gl-matrix';
 
 class Turtle {
-  position : vec3 = vec3.create();
+  position: vec3;
+  orientation: vec3; // index 0 = right, index 1 = up, index 2 = forward
+  scale: vec3;  // index 0 = right, index 1 = up, index 2 = forward
+  depth: number;
 
-
-  constructor(position: vec3, target: vec3) {
-    const canvas = <HTMLCanvasElement> document.getElementById('canvas');
-
-    this.controls = CameraControls(canvas, {
-      position: position,
-      center: target,
-    });
-
-    vec3.add(this.target, this.position, this.direction);
-    mat4.lookAt(this.viewMatrix, this.controls.eye, this.controls.center, this.controls.up);
-
-    this.position = this.controls.eye;
-    this.up = this.controls.up;
-    vec3.subtract(this.forward, this.target, this.position);
-    vec3.normalize(this.forward, this.forward);
-    vec3.cross(this.right, this.forward, this.up);
-    vec3.normalize(this.right, this.right);
+  constructor(position: vec3, orientation: vec3, scale: vec3, depth: number) {
+    this.position = position;
+    this.orientation = orientation;
+    this.scale = scale;
+    this.depth = depth;
   }
 
-  setAspectRatio(aspectRatio: number) {
-    this.aspectRatio = aspectRatio;
+  rotate(axisOfRotation: vec3, angle: number) {
+    let quaternion: quat = quat.create();
+    let newOrientation: vec4 = vec4.fromValues(this.orientation[0], this.orientation[1], this.orientation[2], 0);
+    vec3.normalize(axisOfRotation, axisOfRotation);
+    quat.setAxisAngle(quaternion, axisOfRotation, glMatrix.toRadian(angle));
+    quat.normalize(quaternion, quaternion);
+    vec4.transformQuat(newOrientation, newOrientation, quaternion);
+    this.orientation = vec3.fromValues(newOrientation[0], newOrientation[1], newOrientation[2]);
   }
 
-  updateProjectionMatrix() {
-    mat4.perspective(this.projectionMatrix, this.fovy, this.aspectRatio, this.near, this.far);
+  move() {
+    vec3.add(this.position, this.position, vec3.fromValues(this.scale[2] * this.orientation[0], this.scale[2] * this.orientation[1], this.scale[2] * this.orientation[2]));
   }
 
-  update() {
-    this.controls.tick();
-
-    vec3.add(this.target, this.position, this.direction);
-    this.position = vec3.fromValues(this.controls.eye[0], this.controls.eye[1], this.controls.eye[2]);
-    this.target = vec3.fromValues(this.controls.center[0], this.controls.center[1], this.controls.center[2]);
-    mat4.lookAt(this.viewMatrix, this.controls.eye, this.controls.center, this.controls.up);
-
-    this.position = this.controls.eye;
-    this.up = vec3.fromValues(this.controls.up[0], this.controls.up[1], this.controls.up[2]);
-    vec3.normalize(this.up, this.up);
-    vec3.subtract(this.forward, this.target, this.position);
-    vec3.normalize(this.forward, this.forward);
-    vec3.cross(this.right, this.forward, this.up);
-    vec3.normalize(this.right, this.right);
-    vec3.cross(this.up, this.right, this.forward);
-    vec3.normalize(this.up, this.up);
+  copy() {
+    let newPosition: vec3 = vec3.create();
+    vec3.copy(newPosition, this.position);
+    let newOrientation: vec3 = vec3.create();
+    vec3.copy(newOrientation, this.orientation);
+    let newScale: vec3 = vec3.create();
+    vec3.copy(newScale, this.scale);
+    let newTurtle: Turtle = new Turtle(newPosition, newPosition, newScale, this.depth);
+    return newTurtle;
   }
-};
+}
 
 export default Turtle;
