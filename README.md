@@ -15,13 +15,13 @@ _Wei (Waley) Zhang (PennKey: wzha)_
 
 ## Screenshots
 - __1 iteration__
-![](imag/1_iter.PNG)
+![](img/1_iter.PNG)
 
 - __5 iterations__
-![](imag/5_iter.PNG)
+![](img/5_iter.PNG)
 
 - __9 iterations__
-![](imag/9_iter.PNG)
+![](img/9_iter.PNG)
 
 ## Citations
 I did not use any external resources when implementing this assignment.
