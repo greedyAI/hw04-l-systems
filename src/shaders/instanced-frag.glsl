@@ -14,6 +14,5 @@ void main()
   float diffuseTerm = clamp(abs(dot(normalize(fs_Nor), normalize(fs_LightVec))), 0.0f, 1.0f);
   float ambientTerm = 0.5;
   float lightIntensity = diffuseTerm + ambientTerm;
-
   out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
 }

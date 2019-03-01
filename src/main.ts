@@ -13,10 +13,14 @@ import ScreenQuad from './geometry/ScreenQuad';
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
+  'Regenerate': loadScene,
+  leafColor: '#3a5f0b',
+  branchColor: '#1e0202',
+  iterations: 10,
 };
 
 let plant: Plant;
-let iterations = 7;
+let iterations = 10;
 
 let branch: Mesh;
 let leaf: Mesh;
@@ -34,8 +38,11 @@ function loadScene() {
   // offsets and gradiated colors for a 100x100 grid
   // of squares, even though the VBO data for just
   // one square is actually passed to the GPU
-
-  plant = new Plant(vec3.fromValues(0,0,0), iterations, vec4.fromValues(30/255.0, 2/255.0, 2/255.0, 1), vec4.fromValues(245/255.0, 177/255.0, 245/255.0, 1));
+  let branchColor = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(controls.branchColor);
+  let branchParsed: vec4 = vec4.fromValues(parseInt(branchColor[1], 16) / 255.0, parseInt(branchColor[2], 16) / 255.0, parseInt(branchColor[3], 16) / 255.0, 1);
+  let leafColor = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(controls.leafColor);
+  let leafParsed: vec4 = vec4.fromValues(parseInt(leafColor[1], 16) / 255.0, parseInt(leafColor[2], 16) / 255.0, parseInt(leafColor[3], 16) / 255.0, 1);
+  plant = new Plant(vec3.fromValues(0,0,0), controls.iterations, branchParsed, leafParsed);
   plant.createPlant();
 
   let branchString: string = readTextFile('./obj/branch.obj')
@@ -43,6 +50,12 @@ function loadScene() {
   branch.create();
   branch.setInstanceVBOs(new Float32Array(plant.branchTranslate), new Float32Array(plant.branchRotate), new Float32Array(plant.branchScale), new Float32Array(plant.branchColor));
   branch.setNumInstances(plant.branchCount);
+
+  let leafString: string = readTextFile('./obj/leaf.obj')
+  leaf = new Mesh(leafString, vec3.fromValues(0,0,0));
+  leaf.create();
+  leaf.setInstanceVBOs(new Float32Array(plant.leafTranslate), new Float32Array(plant.leafRotate), new Float32Array(plant.leafScale), new Float32Array(plant.leafColor));
+  leaf.setNumInstances(plant.leafCount);
 }
 
 function main() {
@@ -56,6 +69,10 @@ function main() {
 
   // Add controls to the gui
   const gui = new DAT.GUI();
+  gui.add(controls, 'Regenerate');
+  gui.addColor(controls, 'leafColor');
+  gui.addColor(controls, 'branchColor');
+  gui.add(controls, 'iterations', 1, 12).step(1);
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -70,7 +87,8 @@ function main() {
   // Initial call to load scene
   loadScene();
 
-  const camera = new Camera(vec3.fromValues(10, 50, 10), vec3.fromValues(0, 50, 0));
+  let cameraPos: vec3 = vec3.fromValues(0, 5, -25);
+  const camera = new Camera(cameraPos, vec3.fromValues(0, 5, 0));
 
   const renderer = new OpenGLRenderer(canvas);
   renderer.setClearColor(0.2, 0.2, 0.2, 1);
@@ -96,7 +114,8 @@ function main() {
     renderer.clear();
     renderer.render(camera, flat, [screenQuad]);
     renderer.render(camera, instancedShader, [
-      branch
+      branch,
+      leaf
     ]);
     stats.end();
 

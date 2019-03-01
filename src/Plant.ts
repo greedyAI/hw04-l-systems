@@ -7,7 +7,7 @@ import DrawingRule from './DrawingRule';
 
 class Plant {
   upVector: vec3 = vec3.fromValues(0,1,0);
-  root: vec3;
+  root: vec3 = vec3.create();
   iterations: number;
   branchCol: vec4;
   leafCol: vec4;
@@ -34,21 +34,49 @@ class Plant {
     this.branchCol = branchCol;
     this.leafCol = leafCol;
 
-    this.axiom = "F";
+    this.axiom = "VZFFF";
 
     this.expansionRules = new Map();
     let er1Map: Map<string, number> = new Map();
-    er1Map.set("FF+[+F-F-F]-[-F+F+F]", 1);
-    this.expansionRules.set("F", new ExpansionRule(er1Map));
+    er1Map.set("[+++W][---W]YV", 1);
+    this.expansionRules.set("V", new ExpansionRule(er1Map));
+    let er2Map: Map<string, number> = new Map();
+    er2Map.set("+X[-W]Z", 1);
+    this.expansionRules.set("W", new ExpansionRule(er2Map));
+    let er3Map: Map<string, number> = new Map();
+    er3Map.set("-W[+X]Z", 1);
+    this.expansionRules.set("X", new ExpansionRule(er3Map));
+    let er4Map: Map<string, number> = new Map();
+    er4Map.set("YZ", 1);
+    this.expansionRules.set("Y", new ExpansionRule(er4Map));
+    let er5Map: Map<string, number> = new Map();
+    er5Map.set("[-FFF][+FFF]F", 1);
+    this.expansionRules.set("Z", new ExpansionRule(er5Map));
 
     this.drawingRules = new Map();
     let dr1Map: Map<string, number> = new Map();
     dr1Map.set("branch", 1);
     this.drawingRules.set("F", new ExpansionRule(dr1Map));
+    let dr2Map: Map<string, number> = new Map();
+    dr2Map.set("branch", 1);
+    this.drawingRules.set("V", new ExpansionRule(dr2Map));
+    let dr3Map: Map<string, number> = new Map();
+    dr3Map.set("branch", 1);
+    this.drawingRules.set("W", new ExpansionRule(dr3Map));
+    let dr4Map: Map<string, number> = new Map();
+    dr4Map.set("branch", 1);
+    this.drawingRules.set("X", new ExpansionRule(dr4Map));
+    let dr5Map: Map<string, number> = new Map();
+    dr5Map.set("branch", 1);
+    this.drawingRules.set("Y", new ExpansionRule(dr5Map));
+    let dr6Map: Map<string, number> = new Map();
+    dr6Map.set("branch", 0.5);
+    dr6Map.set("leaf", 0.5);
+    this.drawingRules.set("Z", new ExpansionRule(dr6Map));
   }
 
   noise(p: vec3) {
-    let val: number = Math.abs(Math.sin(p[0] * 987.654 + p[1] * 123.456 + p[2] * 531.975) * 85734.3545);
+    let val: number = Math.abs(Math.sin((p[0] * 10.0 + 100.0) * 987.654 + (p[1] * 10.0 + 100.0) * 123.456 + (p[2] * 10.0 + 100.0) * 531.975) * 85734.3545);
     return val - Math.floor(val);
   }
 
@@ -68,6 +96,7 @@ class Plant {
       currentString = newString;
       newString = "";
     }
+    console.log(currentString);
     return currentString;
   }
 
@@ -75,8 +104,9 @@ class Plant {
     let expandedString: string = this.expandString();
 
     let turtles: Turtle[] = [];
-    turtles.push(new Turtle(this.root, vec3.fromValues(0,1,0), vec3.fromValues(2,2,2), 0));
-
+    let rootCopy: vec3 = vec3.create();
+    vec3.copy(rootCopy, this.root);
+    turtles.push(new Turtle(rootCopy, vec3.fromValues(0,1,0), vec3.fromValues(0.2,1.0,0.2), 0));
     let firstBranchDrawn: boolean = false;
     let currentTurtle: Turtle = turtles[0];
     let initialTurtle: Turtle = turtles[0];
@@ -86,15 +116,15 @@ class Plant {
         let dr: DrawingRule = this.drawingRules.get(currentChar);
         let rule: string = dr.chooseRandomRule();
         if (rule == "branch") {
-          if (currentTurtle.scale[1] < 0.01) {
+          if (currentTurtle.scale[1] < 0.001) {
             continue;
           }
 
           if (currentTurtle != initialTurtle || firstBranchDrawn) {
-            currentTurtle.rotate(vec3.fromValues(0,0,1), 10 * this.noise(currentTurtle.position) - 5);
-            currentTurtle.rotate(vec3.fromValues(1,0,0), 10 * this.noise(currentTurtle.position) - 5);
+            currentTurtle.rotate(vec3.fromValues(0,0,1), 30 * this.noise(currentTurtle.position) - 15);
+            currentTurtle.rotate(vec3.fromValues(1,0,0), 30 * this.noise(currentTurtle.position) - 15);
           }
-          if (currentTurtle.orientation[1] < 0 && currentTurtle.depth < 7) {
+          if (currentTurtle.orientation[1] < 0) {
             currentTurtle.orientation[1] *= -1;
           }
           currentTurtle.scale[0] *= 0.96;
@@ -109,10 +139,11 @@ class Plant {
           this.branchScale.push(currentTurtle.scale[0], currentTurtle.scale[1], currentTurtle.scale[2], 1);
           this.branchColor.push(this.branchCol[0], this.branchCol[1], this.branchCol[2], this.branchCol[3]);
           this.branchCount += 1
+          firstBranchDrawn = true;
 
           currentTurtle.move();
         } else if (rule == "leaf") {
-          if (currentTurtle.scale[1] < 0.01 || currentTurtle.depth < 3) {
+          if (currentTurtle.scale[1] < 0.01) {
             continue;
           }
 
@@ -129,47 +160,53 @@ class Plant {
         if (currentChar == "[") {
           let newTurtle: Turtle = currentTurtle.copy();
           newTurtle.depth += 1;
-          newTurtle.rotate(vec3.fromValues(0,0,1), 10 * this.noise(currentTurtle.position) - 5);
-          newTurtle.rotate(vec3.fromValues(1,0,0), 10 * this.noise(currentTurtle.position) - 5);
+          newTurtle.rotate(vec3.fromValues(0,0,1), 30 * this.noise(currentTurtle.position) - 15);
+          newTurtle.rotate(vec3.fromValues(1,0,0), 30 * this.noise(currentTurtle.position) - 15);
           turtles.push(newTurtle);
 
           currentTurtle.scale[0] *= 0.75;
-          currentTurtle.scale[1] *= 1.0;
+          currentTurtle.scale[1] *= 0.9;
           currentTurtle.scale[2] *= 0.75;
         } else if (currentChar == "]") {
+          if (currentTurtle.scale[1] < 0.001) {
+            continue;
+          }
+
+          let quaternion: quat = quat.fromValues(0,0,0,1);
+          quat.rotationTo(quaternion, this.upVector, currentTurtle.orientation);
+          quat.normalize(quaternion, quaternion);
+          this.leafTranslate.push(currentTurtle.position[0], currentTurtle.position[1], currentTurtle.position[2], 0);
+          this.leafRotate.push(quaternion[0], quaternion[1], quaternion[2], quaternion[3]);
+          this.leafScale.push(0.4,0.4,0.4,1);
+          this.leafColor.push(this.leafCol[0], this.leafCol[1], this.leafCol[2], this.leafCol[3]);
+          this.leafCount += 1;
+
           currentTurtle = turtles.pop();
         } else if (currentChar == "+") {
-          let rotationMatrix: mat4 = mat4.create();
-          let target: vec3 = vec3.create();
-          vec3.add(target, currentTurtle.position, currentTurtle.orientation);
-          mat4.targetTo(rotationMatrix, currentTurtle.position, target, this.upVector);
+          let quaternion: quat = quat.fromValues(0,0,0,1);
+          quat.rotationTo(quaternion, this.upVector, currentTurtle.orientation);
+          quat.normalize(quaternion, quaternion);
 
-          let tangent4: vec4 = vec4.create();
-          vec4.transformMat4(tangent4, vec4.fromValues(1,0,0,1), rotationMatrix);
-          let tangent: vec3 = vec3.fromValues(tangent4[0], tangent4[1], tangent4[2]);
+          let tangent: vec3 = vec3.create();
+          vec3.transformQuat(tangent, vec3.fromValues(1,0,0), quaternion);
+          let bitTangent: vec3 = vec3.create();
+          vec3.transformQuat(bitTangent, vec3.fromValues(0,0,1), quaternion);
 
-          let bitTangent4: vec4 = vec4.create();
-          vec4.transformMat4(bitTangent4, vec4.fromValues(0,0,1,1), rotationMatrix);
-          let bitTangent: vec3 = vec3.fromValues(bitTangent4[0], bitTangent4[1], bitTangent4[2]);
-
-          currentTurtle.rotate(tangent, 30 * this.noise(currentTurtle.position));
-          currentTurtle.rotate(bitTangent, 30 * this.noise(currentTurtle.position));
+          currentTurtle.rotate(tangent, 180 * this.noise(currentTurtle.position));
+          currentTurtle.rotate(bitTangent, 60 * this.noise(currentTurtle.position));
         } else if (currentChar == "-") {
-          let rotationMatrix: mat4 = mat4.create();
-          let target: vec3 = vec3.create();
-          vec3.add(target, currentTurtle.position, currentTurtle.orientation);
-          mat4.targetTo(rotationMatrix, currentTurtle.position, target, this.upVector);
+          let quaternion: quat = quat.fromValues(0,0,0,1);
+          quat.rotationTo(quaternion, this.upVector, currentTurtle.orientation);
+          quat.normalize(quaternion, quaternion);
 
-          let tangent4: vec4 = vec4.create();
-          vec4.transformMat4(tangent4, vec4.fromValues(1,0,0,1), rotationMatrix);
-          let tangent: vec3 = vec3.fromValues(tangent4[0], tangent4[1], tangent4[2]);
+          let tangent: vec3 = vec3.create();
+          vec3.transformQuat(tangent, vec3.fromValues(1,0,0), quaternion);
+          let bitTangent: vec3 = vec3.create();
+          vec3.transformQuat(bitTangent, vec3.fromValues(0,0,1), quaternion);
 
-          let bitTangent4: vec4 = vec4.create();
-          vec4.transformMat4(bitTangent4, vec4.fromValues(0,0,1,1), rotationMatrix);
-          let bitTangent: vec3 = vec3.fromValues(bitTangent4[0], bitTangent4[1], bitTangent4[2]);
+          currentTurtle.rotate(tangent, -180 * this.noise(currentTurtle.position));
+          currentTurtle.rotate(bitTangent, -60 * this.noise(currentTurtle.position));
 
-          currentTurtle.rotate(tangent, -30 * this.noise(currentTurtle.position));
-          currentTurtle.rotate(bitTangent, -30 * this.noise(currentTurtle.position));
         }
       }
     }

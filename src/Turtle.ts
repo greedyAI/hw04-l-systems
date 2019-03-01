@@ -21,10 +21,11 @@ class Turtle {
     quat.normalize(quaternion, quaternion);
     vec4.transformQuat(newOrientation, newOrientation, quaternion);
     this.orientation = vec3.fromValues(newOrientation[0], newOrientation[1], newOrientation[2]);
+    vec3.normalize(this.orientation, this.orientation);
   }
 
   move() {
-    vec3.add(this.position, this.position, vec3.fromValues(this.scale[2] * this.orientation[0], this.scale[2] * this.orientation[1], this.scale[2] * this.orientation[2]));
+    vec3.add(this.position, this.position, vec3.fromValues(this.scale[1] * this.orientation[0], this.scale[1] * this.orientation[1], this.scale[1] * this.orientation[2]));
   }
 
   copy() {
@@ -34,7 +35,7 @@ class Turtle {
     vec3.copy(newOrientation, this.orientation);
     let newScale: vec3 = vec3.create();
     vec3.copy(newScale, this.scale);
-    let newTurtle: Turtle = new Turtle(newPosition, newPosition, newScale, this.depth);
+    let newTurtle: Turtle = new Turtle(newPosition, newOrientation, newScale, this.depth);
     return newTurtle;
   }
 }
